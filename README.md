@@ -21,7 +21,7 @@ Or install it yourself as:
 ## Usage
 
 For demonstration of options constructor, create application that says 'Hello'.
-```
+```ruby
 require 'cmdlib.rb'
 
 # Create CLI handler.
@@ -61,7 +61,7 @@ Now we can run 'Hello' program with arguments: `ruby hello.rb help` or `ruby hel
 also we can use option `-n` to set name: `ruby hello.rb -nMyName` or `ruby hello.rb -n MyName` or `ruby hello.rb -n=MyName`.
 
 For demonstration of commands handler constructor, create application that calculation square and cube on input number.
-```
+```ruby
 require 'cmdlib.rb'
 
 # Create handler for 'square' command.
@@ -132,8 +132,11 @@ puts 'fatal error: too few arguments for program.'
 ```
 Also, application can display details information bout command: `ruby calc.rb help cube`.
 Run application:
+
     $ ruby calc.rb cube 10
+    
 or, in verbose mode:
+
     $ ruby calc.rb cube 10 -v
 
 ## Development
