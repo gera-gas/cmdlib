@@ -19,58 +19,119 @@ Or install it yourself as:
     $ gem install cmdlib
 
 ## Usage
+Gem have a three base types.
+* Cmdlib::Option  -- Create options.
+* Cmdlib::Command -- Create commands.
+* Cmdlib::App     -- Create application.
 
-For demonstration of options constructor, create application that says 'Hello'.
+Gem set (Cmdlib::App.new) default version value to '0.1.1'.
+For modify version use:
+```ruby
+app = Cmdlib::App.new( 'myapp' )
+app.version = '1.1.1'
+```
+
+#### Simple application example
+Use `.default` method for create signle function application (Application don't have a commands).
+
 ```ruby
 require 'cmdlib.rb'
 
+# Create default command.
+class Echo < Cmdlib::Command
+  def handler ( global_options, args )
+    line = ''
+    args.each do |a|
+      line += "#{a} "
+    end
+    puts line
+  end
+end
+
 # Create CLI handler.
-handler = Cmdlib::Handler.new
-handler.usage << 'This program say hello.'
-handler.usage << ''
-handler.usage << '  Usage: ruby hello.rb [OPTIONS...]'
+app = Cmdlib::App.new( 'echo' )
+app.about << 'display a line of text.'
 
-# Create options object.
-opt_name = Cmdlib::Option.new( 'n', 'name', 'Option set name for hello message.', true )
-
-# Add objects to handler.
-handler.addopt opt_name
+# Add default command.
+app.default Echo.new
 
 # Run CLI handler.
-handler.run
-
-# Create output string
-hello = "Hello"
-
-# If value do not contain nil, those option is present.
-# Parameter of option can be set as: -nJohn or -n=John or -n John
-hello += " #{opt_name.value}" if opt_name.value != nil
-
-puts hello
+app.run
 ```
-Create CLI handler object `Cmdlib::Handler.new`, then create options object `Cmdlib::Option.new`.
-The option constructor takes the following values:
-* Short option name: -...
-* Long option name: --...
-* String with brief information about option (default => false).
-* This sign tells the parser that the option has a parameter, example: --opt=... (default => false).
+    $ ruby echo.rb Some Text!
+    Some Text!
 
-Add to handler options objects.
+#### Global options example
+Create global option `--name` for all commands in application. If option have a parameter,
+then last argument in `Cmdlib::Option.new` should set in `true`.
 
-Now we can run 'Hello' program with arguments: `ruby hello.rb help` or `ruby hello.rb -h` or `ruby hello.rb --help`, 
-also we can use option `-n` to set name: `ruby hello.rb -nMyName` or `ruby hello.rb -n MyName` or `ruby hello.rb -n=MyName`.
+```ruby
+require 'cmdlib.rb'
 
-For demonstration of commands handler constructor, create application that calculation square and cube on input number.
+# Create default command.
+class Hello < Cmdlib::Command
+  def handler ( global_options, args )
+    hello = "Hello"
+    # If value do not contain nil, those option is present.
+    # Parameter of option can be set as: -nJohn or -n=John or -n John
+    hello += " #{global_options[:name].value}" if global_options[:name].value != nil
+    puts hello
+  end
+end
+
+# Create CLI handler.
+app = Cmdlib::App.new( 'hello' )
+app.about << 'This program say hello.'
+app.usage << 'ruby hello.rb [OPTIONS ...]'
+
+# Create global options object.
+app.addopt Cmdlib::Option.new( 'n', 'name', 'Option set name for hello message.', true )
+# Add default command.
+app.default Hello.new
+
+# Run CLI handler.
+app.run
+```
+    $ ruby hello.rb -h
+                                 *** hello ***                                  
+    ** ABOUT:
+      This program say hello.
+
+    ** USAGE:
+      ruby hello.rb [OPTIONS ...]
+
+    ** OPTIONS:
+      -V,--version     # Display application version.
+      -n,--name=[...]  # Option set name for hello message.
+
+    $ ruby hello.rb
+    Hello
+      
+    $ ruby hello.rb -nJohn
+    Hello John
+
+#### Commands example
+Create application that calculation square and cube on input number.
 ```ruby
 require 'cmdlib.rb'
 
 # Create handler for 'square' command.
-class CLISquare < Cmdlib::Command
+class Square < Cmdlib::Command
+  # Redefine init to set command attribute.
+  def init
+    @name = 'square'
+    @brief = 'Calculation square of number.'
+    @details << 'Command call format: ruby pow.rb square <number>.'
+    @example << 'ruby pow.rb square 2'
+    # Set numbers of parameters for this command.
+    @argnum = 1
+  end
+  
   # Redefine default handler
-  def handler
+  def handler ( global_options, args )
     # if value do not contain nil, those option is present.
-    numb = ARGV[1].to_i
-    if $opt_verbose.value != nil then
+    numb = args[0].to_i
+    if global_options[:verbose].value != nil then
       puts "Square of #{numb} => #{numb * numb}"
     else
       puts "#{numb * numb}"
@@ -78,13 +139,24 @@ class CLISquare < Cmdlib::Command
   end
 end
 
+
 # Create handler for 'cube' command.
-class CLICube < Cmdlib::Command
+class Cube < Cmdlib::Command
+  # Redefine init to set command attribute.
+  def init
+    @name = 'cube'
+    @brief = 'Calculation cube of number.'
+    @details << 'Command call format: ruby pow.rb cube <number>.'
+    @example << 'ruby pow.rb cube 2'
+    # Set numbers of parameters for this command.
+    @argnum = 1
+  end
+
   # Redefine default handler
-  def handler
+  def handler ( global_options, args )
     # if value do not contain nil, those option is present.
-    numb = ARGV[1].to_i
-    if $opt_verbose.value != nil then
+    numb = args[0].to_i
+    if global_options[:verbose].value != nil then
       puts "Cube of #{numb} => #{numb * numb * numb}"
     else
       puts "#{numb * numb * numb}"
@@ -92,52 +164,154 @@ class CLICube < Cmdlib::Command
   end
 end
 
-# Create CLI handler.
-handler = Cmdlib::Handler.new
-handler.usage << 'Calculation square and cube of number.'
-handler.usage << ''
-handler.usage << '  Usage: ruby calc.rb <command> [OPTIONS...]'
 
-# Create object of 'square' command handler.
-square = CLISquare.new
-square.describe.oname = 'square'
-square.describe.brief = 'Calculation square of number.'
-square.describe.details << 'Command call format: ruby calc.rb square <number>.'
-square.describe.example << 'ruby calc.rb square 2'
-# Set numbers of parameters for this command.
-square.argnum = 1
+# Create CLI application.
+app = Cmdlib::App.new( 'pow' )
+app.about << 'Calculation square and cube of number.'
+app.usage << 'ruby pow.rb COMMAND [OPTIONS...]'
+app.version = '1.0.0'
 
-# Create object of 'cube' command handler.
-cube = CLICube.new
-cube.describe.oname = 'cube'
-cube.describe.brief = 'Calculation cube of number.'
-cube.describe.details << 'Command call format: ruby calc.rb cube <number>.'
-cube.describe.example << 'ruby calc.rb cube 2'
-# Set numbers of parameters for this command.
-cube.argnum = 1
+# Create global options.
+app.addopt Cmdlib::Option.new( 'v', 'verbose', 'Option enable verbose mode.' )
 
-# Create options object.
-$opt_verbose = Cmdlib::Option.new( 'v', 'verbose', 'Option enable verbose mode.' )
-
-# Add objects to handler.
-handler.addcmd square
-handler.addcmd cube
-handler.addopt $opt_verbose
+# Add commands to application.
+app.addcmd Square.new
+app.addcmd Cube.new
 
 # Run CLI handler.
-handler.run
-
-# Handler to runing without arguments.
-puts 'fatal error: too few arguments for program.'
+app.run
 ```
-Also, application can display details information bout command: `ruby calc.rb help cube`.
-Run application:
 
-    $ ruby calc.rb cube 10
+#### SubCommands example
+Create command `remote` for create connectin to localhost and two subcommands: `tcp` and `domain`.
+Subcommand `tcp` have a option `--port`.
+```ruby
+require 'cmdlib.rb'
+
+# Subcommand class.
+class ConnectTCP < Cmdlib::Command
+  def init
+    @name = 'tcp'
+    @brief = 'Connection to server by IP address (default port: 1234).'
+    @example << 'ruby remote.rb connect TCP [IP ADDRESS]'
+    @argnum = 1
     
-or, in verbose mode:
+    # Add option for this subcmd.
+    addopt Cmdlib::Option.new( 'p', 'port', 'Option set connection port.', true )
+  end
+  
+  def handler ( global_options, args )
+    address = args[0]
+    address += ":#{@options[:port].value}" if @options[:port].value != nil
+    puts "Connect to #{address}"
+  end
+end
 
-    $ ruby calc.rb cube 10 -v
+# Subcommand class.
+class ConnectDomain < Cmdlib::Command
+  def init
+    @name = 'domain'
+    @brief = 'Connection to server by domain address.'
+    @example << 'ruby remote.rb connect domain [DOMAIN]'
+    @argnum = 1
+  end
+  
+  # Redefine default handler
+  def handler ( global_options, args )
+    puts "Connect to #{args[0]}"
+  end
+end
+
+# Main command class.
+class Connect < Cmdlib::Command
+  def init
+    @name = 'remote'
+    @brief = 'Create remote connection.'
+    
+    addcmd ConnectTCP.new
+    addcmd ConnectDomain.new
+  end
+  # Redefine default handler
+  def handler ( global_options, args )
+    puts "Connect to localhost."
+  end
+end
+
+app = Cmdlib::App.new( 'remote' )
+app.about << 'Demo of Subcommand.'
+app.addcmd Connect.new
+app.run
+```
+
+#### Dynamic command list creation
+Create CLI application and command `base` in main file `base.rb` and
+add custom command from `addon` directory.
+Directory tree:
+[...]
+ - base.rb
+ + [addon]
+   - addon.rb
+
+__FILE:__ __base.rb__
+```ruby
+require 'cmdlib.rb'
+
+# Create default command.
+class Base < Cmdlib::Command
+  def init
+    @name  = 'base'
+    @brief = 'Base command of application.'
+  end
+end
+
+# Create CLI handler.
+app = Cmdlib::App.new( 'addon' )
+app.about << 'Demo for create dynamic command list.'
+
+# Add default command.
+app.addcmd Base.new
+
+# Added custom command to application
+# from ruby scripts in directory [addon].
+require 'find'
+list = []
+fname = ''
+Find.find( 'addon' ) do |path|
+  list << path if path =~ /^[\w\/]+\.rb$/
+end
+list.each do |e|
+  require "./#{e}"
+  fname = File.basename( list[0].split('.')[0] )
+  fname = fname[0].upcase + fname[1,fname.length]
+  eval("app.addcmd #{fname}.new")
+end
+
+# Run CLI handler.
+app.run
+```
+__FILE:__ __addon/addon.rb__
+```ruby
+# Create default command.
+class Addon < Cmdlib::Command
+  def init
+    @name  = 'addon'
+    @brief = 'Addon command of application.'
+  end
+end
+```
+    $ ruby base.rb -h
+                                     *** addon ***                                  
+    ** ABOUT:
+      Demo for create dynamic command list.
+
+    ** OPTIONS:
+      -V,--version  # Display application version.
+
+    ** COMMANDS:
+      base   # Base command of application.
+      addon  # Addon command of application.
+
+    For details, type: help [COMMAND]
 
 ## Development
 
