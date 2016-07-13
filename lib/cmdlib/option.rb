@@ -22,7 +22,8 @@ module Cmdlib
       raise TypeError, 'Incorrectly types for option constructor.' unless
 	sname.instance_of? String and
 	lname.instance_of? String and
-	brief.instance_of? String
+	brief.instance_of? String and
+	sname.length == 1 and lname.length > 1
 
       @shortname = sname
       @longname  = lname

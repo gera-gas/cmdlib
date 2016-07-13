@@ -12,7 +12,7 @@ Gem::Specification.new do |spec|
   spec.description   = %q{}
   spec.homepage      = "https://github.com/gera-gas/cmdlib"
   spec.license       = "MIT"
-  spec.files         = ["lib/cmdlib.rb", "lib/cmdlib/command.rb", "lib/cmdlib/describe.rb", "lib/cmdlib/handler.rb", "lib/cmdlib/option.rb", "lib/cmdlib/version.rb"]
+  spec.files         = ["lib/cmdlib.rb", "lib/cmdlib/version.rb", "lib/cmdlib/option.rb", "lib/cmdlib/command.rb", "lib/cmdlib/application.rb", "lib/cmdlib/describe.rb"]
   spec.bindir        = "exe"
   spec.executables   = spec.files.grep(%r{^exe/}) { |f| File.basename(f) }
   spec.require_paths = ["lib"]
